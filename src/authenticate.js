@@ -48,8 +48,7 @@ export default class VueAuthenticate {
       this.options.bindRequestInterceptor.call(this, this)
       this.options.bindResponseInterceptor.call(this, this)
     } else {
-      // By default, request and response interceptors are for vue-resource
-      this.$http.interceptors.push((request, next) => {
+      let interceptor = function(request, next) {
         if (this.isAuthenticated()) {
           request.headers.set('Authorization', [
             this.options.tokenType, this.getToken()
@@ -69,7 +68,15 @@ export default class VueAuthenticate {
           } catch(e) {}
           return response
         })
-      })
+      }
+
+      // By default, request and response interceptors are for vue-resource
+      if (this.$http.interceptors.push) {
+        this.$http.interceptors.push(interceptor)
+      } else {
+        // axios
+        this.$http.interceptors.request.handlers.push(interceptor)
+      }
     }
   }
 

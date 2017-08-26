@@ -1030,8 +1030,6 @@ OAuth2.prototype._stringifyRequestParams = function _stringifyRequestParams () {
 };
 
 var VueAuthenticate = function VueAuthenticate($http, overrideOptions) {
-  var this$1 = this;
-
   var options = objectExtend({}, defaultOptions);
   options = objectExtend(options, overrideOptions);
   var storage = StorageFactory(options);
@@ -1073,11 +1071,12 @@ var VueAuthenticate = function VueAuthenticate($http, overrideOptions) {
     this.options.bindRequestInterceptor.call(this, this);
     this.options.bindResponseInterceptor.call(this, this);
   } else {
-    // By default, request and response interceptors are for vue-resource
-    this.$http.interceptors.push(function (request, next) {
-      if (this$1.isAuthenticated()) {
+    var interceptor = function(request, next) {
+      var this$1 = this;
+
+      if (this.isAuthenticated()) {
         request.headers.set('Authorization', [
-          this$1.options.tokenType, this$1.getToken()
+          this.options.tokenType, this.getToken()
         ].join(' '));
       } else {
         request.headers.delete('Authorization');
@@ -1094,7 +1093,15 @@ var VueAuthenticate = function VueAuthenticate($http, overrideOptions) {
         } catch(e) {}
         return response
       });
-    });
+    };
+
+    // By default, request and response interceptors are for vue-resource
+    if (this.$http.interceptors.push) {
+      this.$http.interceptors.push(interceptor);
+    } else {
+      // axios
+      this.$http.interceptors.request.handlers.push(interceptor);
+    }
   }
 };
 
